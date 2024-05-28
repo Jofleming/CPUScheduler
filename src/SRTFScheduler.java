@@ -5,23 +5,29 @@ import java.util.Arrays;
 import java.util.PriorityQueue;
 
 /**
- * Scheduler class to emulate a shortest remaining time first scheduling algorithm.
+ * Scheduler class to emulate the shortest remaining time first scheduling algorithm.
  * @author Jordan Fleming
  * @version 1.0
  * @since 5/22/2024
  */
 public class SRTFScheduler {
+    Process[] processList;
     ArrayList<Process> IOList;
     Process runningProcess;
     PriorityQueue<Process> processQueue;
     int timeQuantum;
     boolean printOutput = true;
+    double avgWT;
+    double avgRT;
+    double avgTRT;
+    double CPUUtilization;
 
     /**
      * Lone constructor for SRTFScheduler class. Full constructor.
      * @param processes     Process array with processes to be scheduled.
      */
     SRTFScheduler(Process[] processes) {
+        processList = processes;
         IOList = new ArrayList<Process>();
         runningProcess = null;
         processQueue = new PriorityQueue<>();
@@ -29,6 +35,7 @@ public class SRTFScheduler {
             processQueue.add(processes[i]);
         }
         timeQuantum = 0;
+        avgRT = avgTRT = avgWT = CPUUtilization = 0.0;
     }
 
     /**
@@ -40,8 +47,13 @@ public class SRTFScheduler {
                 moveProcessOntoCPU();
             }
             if (runningProcess != null && runningProcess.getCurrentEvent() == 0) {
-                processToIO();
-                moveProcessOntoCPU();
+                if (runningProcess.eventAtEnd()) {
+                    // TODO: Update Process stats.
+                    runningProcess = null;
+                } else {
+                    processToIO();
+                    moveProcessOntoCPU();
+                }
             }
             decrementIO();
             if (runningProcess != null) {
@@ -107,6 +119,8 @@ public class SRTFScheduler {
         }
         return false;
     }
+
+    // TODO: Make check Preempt method
 
     /**
      * Prints out all the current processes and their states.

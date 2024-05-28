@@ -11,6 +11,7 @@ public class Process {
     private int turnAroundTime;
     private int responseTime;
     private int QAddTime;
+    private int burstTime;
 
     public String getID() {
         return ID;
@@ -31,6 +32,19 @@ public class Process {
         events.set(eventsIndex, changedEvent);
     }
 
+    public void updateProcessStats(int endTime) {
+        turnAroundTime = endTime;
+        waitTime = turnAroundTime - burstTime;
+    }
+
+    public boolean eventAtEnd() {
+        if (eventsIndex == events.size() - 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public void setPriority(int priority) {
         this.priority = priority;
     }
@@ -41,6 +55,11 @@ public class Process {
 
     public void setEvents(ArrayList<Integer> events) {
         this.events = events;
+        int eventsBurst = 0;
+        for (int i = 0; i < events.size(); i++) {
+            eventsBurst += events.get(i);
+        }
+        this.burstTime = eventsBurst;
     }
 
     public int getEventsIndex() {
@@ -96,9 +115,9 @@ public class Process {
         this.eventsIndex = 0;
         this.waitTime = 0;
         this.turnAroundTime = 0;
-        this.responseTime = 0;
+        this.responseTime = -1;
         this.QAddTime = 0;
-        this.priority = 0;
+        this.priority = 1;
     }
 }
 
