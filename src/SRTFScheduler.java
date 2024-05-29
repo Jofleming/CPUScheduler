@@ -1,7 +1,7 @@
 package src;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.PriorityQueue;
 
 /**
@@ -22,6 +22,8 @@ public class SRTFScheduler {
     double avgTRT;
     double CPUUtilization;
 
+    double totalTimeActive;
+
     /**
      * Lone constructor for SRTFScheduler class. Full constructor.
      * @param processes     Process array with processes to be scheduled.
@@ -30,38 +32,53 @@ public class SRTFScheduler {
         processList = processes;
         IOList = new ArrayList<Process>();
         runningProcess = null;
-        processQueue = new PriorityQueue<>();
+        processQueue = new PriorityQueue<>(new Comparator<Process>() {
+            @Override
+            public int compare(Process o1, Process o2) {
+                return o1.getCurrentEvent() - o2.getCurrentEvent();
+            }
+        });
         for (int i = 0; i < processes.length; i++) {
             processQueue.add(processes[i]);
         }
         timeQuantum = 0;
-        avgRT = avgTRT = avgWT = CPUUtilization = 0.0;
+        avgRT = avgTRT = avgWT = CPUUtilization = totalTimeActive = 0.0;
     }
 
     /**
      * Runs the simulation with the given array of processes.
      */
-    public void scheduleCPU() {
+    public double[] scheduleCPU() {
         while (!processQueue.isEmpty() || !IOList.isEmpty() || runningProcess != null) {
             if (runningProcess == null && !processQueue.isEmpty()) {
                 moveProcessOntoCPU();
             }
             if (runningProcess != null && runningProcess.getCurrentEvent() == 0) {
                 if (runningProcess.eventAtEnd()) {
-                    // TODO: Update Process stats.
+                    runningProcess.updateProcessStats(timeQuantum);
                     runningProcess = null;
                 } else {
                     processToIO();
                     moveProcessOntoCPU();
                 }
             }
+            if (!processQueue.isEmpty() && runningProcess != null && processQueue.peek().getCurrentEvent() < runningProcess.getCurrentEvent()) {
+                preempt();
+            }
             decrementIO();
             if (runningProcess != null) {
                 runningProcess.updateCurrentEvent(-1);
+                totalTimeActive++;
             }
             timeQuantum++;
             printCPUStatus();
         }
+        computeAvgs();
+        System.out.printf("Average Response Time: %d%n", avgRT);
+        System.out.printf("Average Waiting Time: %d%n", avgWT);
+        System.out.printf("Average Turnaround Time: %d%n", avgTRT);
+        System.out.printf("CPU Percent Utilization: %d%%%n", avgRT);
+        return new double[]{avgRT, avgWT, avgTRT, CPUUtilization};
     }
 
     /**
@@ -70,6 +87,13 @@ public class SRTFScheduler {
     public void moveProcessOntoCPU () {
         if (!processQueue.isEmpty()) {
             runningProcess = processQueue.poll();
+            checkFirstLoad(runningProcess);
+        }
+    }
+
+    public void checkFirstLoad(Process process) {
+        if (process.getResponseTime() == -1) {
+            process.setResponseTime(timeQuantum);
         }
     }
 
@@ -120,7 +144,27 @@ public class SRTFScheduler {
         return false;
     }
 
-    // TODO: Make check Preempt method
+    public void preempt() {
+        processQueue.add(runningProcess);
+        runningProcess = null;
+        moveProcessOntoCPU();
+    }
+
+    public void computeAvgs() {
+        double sumRT = 0.0;
+        double sumTRT = 0.0;
+        double sumWT = 0.0;
+        for (int i = 0; i < processList.length; i++) {
+            sumTRT += processList[i].getTurnAroundTime();
+            sumRT += processList[i].getResponseTime();
+            sumWT += processList[i].getWaitTime();
+        }
+        avgRT = sumRT / processList.length;
+        avgTRT = sumTRT / processList.length;
+        avgWT = sumWT / processList.length;
+        CPUUtilization = (totalTimeActive / timeQuantum) * 100;
+    }
+
 
     /**
      * Prints out all the current processes and their states.

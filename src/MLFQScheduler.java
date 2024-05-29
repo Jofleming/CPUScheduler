@@ -24,6 +24,7 @@ public class MLFQScheduler {
     double avgRT;
     double avgTRT;
     double CPUUtilization;
+    double totalTimeActive;
 
     MLFQScheduler(Process[] processes) {
         processList = processes;
@@ -37,17 +38,16 @@ public class MLFQScheduler {
         }
         timeQuantum = 0;
         quantumCounter = 0;
-        avgRT = avgTRT = avgWT = CPUUtilization = 0.0;
+        avgRT = avgTRT = avgWT = CPUUtilization = totalTimeActive = 0.0;
     }
 
-    public void scheduleCPU() {
+    public double[] scheduleCPU() {
         while (!queueOne.isEmpty() || !queueTwo.isEmpty() || !queueThree.isEmpty() || !IOList.isEmpty() || runningProcess != null) {
             if (runningProcess == null && (!queueOne.isEmpty() || !queueTwo.isEmpty() || !queueThree.isEmpty())) {
                 moveProcessOntoCPU();
             }
             if (runningProcess != null && runningProcess.getCurrentEvent() == 0) {
                 if (runningProcess.eventAtEnd()) {
-                    // TODO: Update Process stats.
                     runningProcess.updateProcessStats(timeQuantum);
                     runningProcess = null;
                     moveProcessOntoCPU();
@@ -62,25 +62,34 @@ public class MLFQScheduler {
             decrementIO();
             if (runningProcess != null) {
                 runningProcess.updateCurrentEvent(-1);
+                totalTimeActive++;
             }
             timeQuantum++;
             CPUQuantum--;
-            // printCPUStatus();
+             printCPUStatus();
         }
         computeAvgs();
         // TODO: Report averages
+        System.out.printf("Average Response Time: %d%n", avgRT);
+        System.out.printf("Average Waiting Time: %d%n", avgWT);
+        System.out.printf("Average Turnaround Time: %d%n", avgTRT);
+        System.out.printf("CPU Percent Utilization: %d%%%n", avgRT);
+        return new double[]{avgRT, avgWT, avgTRT, CPUUtilization};
     }
 
     public void moveProcessOntoCPU () {
         if (!queueOne.isEmpty()) {
             runningProcess = queueOne.getFirst();
             CPUQuantum = 5;
+            checkFirstLoad(runningProcess);
         } else if (!queueTwo.isEmpty()) {
             runningProcess = queueTwo.getFirst();
             CPUQuantum = 10;
+            checkFirstLoad(runningProcess);
         } else if (!queueThree.isEmpty()) {
             runningProcess = queueThree.getFirst();
             CPUQuantum = 10000000;
+            checkFirstLoad(runningProcess);
         }
     }
 
@@ -122,7 +131,6 @@ public class MLFQScheduler {
     }
 
     public void preempt() {
-        // TODO: Fill out preempt method
         runningProcess.setPriority(runningProcess.getPriority() + 1);
         if (runningProcess.getPriority() == 2) {
             queueTwo.add(runningProcess);
@@ -134,8 +142,13 @@ public class MLFQScheduler {
         moveProcessOntoCPU();
     }
 
+    public void checkFirstLoad(Process process) {
+        if (process.getResponseTime() == -1) {
+            process.setResponseTime(timeQuantum);
+        }
+    }
+
     public void computeAvgs() {
-        // TODO: Add CPU Utilization Calculation
         double sumRT = 0.0;
         double sumTRT = 0.0;
         double sumWT = 0.0;
@@ -147,6 +160,66 @@ public class MLFQScheduler {
         avgRT = sumRT / processList.length;
         avgTRT = sumTRT / processList.length;
         avgWT = sumWT / processList.length;
+        CPUUtilization = (totalTimeActive / timeQuantum) * 100;
+    }
+
+    public void printCPUStatus() {
+        if (printOutput) {
+            System.out.printf("Current Time: %d%n", timeQuantum);
+            if (runningProcess != null) {
+                System.out.printf("Next process on the CPU: %s%n", runningProcess.getID());
+            } else {
+                System.out.println("CPU currently awaiting process");
+            }
+            System.out.println("........................................................");
+            System.out.println("List of processes in queue 1:");
+            if (queueOne.isEmpty()) {
+                System.out.println("[ EMPTY ]");
+            } else {
+                LinkedList<Process> printQueue = (LinkedList<Process>)queueOne.clone();
+                System.out.println("    Process    Burst");
+                while (!printQueue.isEmpty()) {
+                    Process currProcess = printQueue.poll();
+                    System.out.printf("     %s      %d%n", currProcess.getID(), currProcess.getCurrentEvent());
+                }
+            }
+            System.out.println("........................................................");
+            System.out.println("List of processes in queue 2:");
+            if (queueTwo.isEmpty()) {
+                System.out.println("[ EMPTY ]");
+            } else {
+                LinkedList<Process> printQueue = (LinkedList<Process>)queueTwo.clone();
+                System.out.println("    Process    Burst");
+                while (!printQueue.isEmpty()) {
+                    Process currProcess = printQueue.poll();
+                    System.out.printf("     %s      %d%n", currProcess.getID(), currProcess.getCurrentEvent());
+                }
+            }
+            System.out.println("........................................................");
+            System.out.println("List of processes in queue 3:");
+            if (queueThree.isEmpty()) {
+                System.out.println("[ EMPTY ]");
+            } else {
+                LinkedList<Process> printQueue = (LinkedList<Process>)queueThree.clone();
+                System.out.println("    Process    Burst");
+                while (!printQueue.isEmpty()) {
+                    Process currProcess = printQueue.poll();
+                    System.out.printf("     %s      %d%n", currProcess.getID(), currProcess.getCurrentEvent());
+                }
+            }
+            System.out.println("........................................................");
+            System.out.println("List of processes in I/O:");
+            if (IOList.isEmpty()) {
+                System.out.println("[ EMPTY ]");
+            } else {
+                for (int i = 0; i < IOList.size(); i++) {
+                    Process currProcess = IOList.get(i);
+                    System.out.printf("     %s      %d%n", currProcess.getID(), currProcess.getCurrentEvent());
+                }
+            }
+            System.out.println("........................................................");
+            System.out.println("........................................................");
+        }
     }
 
 }
