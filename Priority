@@ -1,0 +1,13 @@
+***Priority Scheduler***
+Process ID: P1, Wait time: 128, Response time: 27, Turnaround time: 353, 
+Process ID: P2, Wait time: 253, Response time: 67, Turnaround time: 680, 
+Process ID: P3, Wait time: 117, Response time: 35, Turnaround time: 509, 
+Process ID: P4, Wait time: 116, Response time: 32, Turnaround time: 600, 
+Process ID: P5, Wait time: 55, Response time: 0, Turnaround time: 364, 
+Process ID: P6, Wait time: 94, Response time: 16, Turnaround time: 309, 
+Process ID: P7, Wait time: 252, Response time: 112, Turnaround time: 580, 
+Process ID: P8, Wait time: 288, Response time: 108, Turnaround time: 597, 
+Total CPU Usage: 81.32% 
+Average Wait Time: 162.88
+Average Response Time: 49.63
+Average Turnaround Time: 499.00
