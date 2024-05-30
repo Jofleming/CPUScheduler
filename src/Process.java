@@ -11,6 +11,18 @@ public class Process {
     private int turnAroundTime;
     private int responseTime;
     private int QAddTime;
+    private int burstTime;
+
+    public Process(String ID) {
+        this.ID = ID;
+        this.events = new ArrayList<>();
+        this.eventsIndex = 0;
+        this.waitTime = 0;
+        this.turnAroundTime = 0;
+        this.responseTime = -1;
+        this.QAddTime = 0;
+        this.priority = 1;
+    }
 
     public String getID() {
         return ID;
@@ -24,13 +36,6 @@ public class Process {
         return priority;
     }
 
-    public int getCurrentEvent() {return events.get(eventsIndex);}
-
-    public void updateCurrentEvent(int update) {
-        Integer changedEvent = events.get(0).intValue() + update;
-        events.set(eventsIndex, changedEvent);
-    }
-
     public void setPriority(int priority) {
         this.priority = priority;
     }
@@ -41,6 +46,25 @@ public class Process {
 
     public void setEvents(ArrayList<Integer> events) {
         this.events = events;
+        this.burstTime = events.stream().mapToInt(Integer::intValue).sum();
+    }
+
+    public int getCurrentEvent() {
+        return events.get(eventsIndex);
+    }
+
+    public void updateCurrentEvent(int update) {
+        int updatedEvent = events.get(eventsIndex) + update;
+        events.set(eventsIndex, updatedEvent);
+    }
+
+    public void updateProcessStats(int endTime) {
+        turnAroundTime = endTime;
+        waitTime = Math.max(0, turnAroundTime - burstTime);
+    }
+
+    public boolean eventAtEnd() {
+        return eventsIndex == events.size() - 1;
     }
 
     public int getEventsIndex() {
@@ -83,22 +107,7 @@ public class Process {
         this.QAddTime = QAddTime;
     }
 
-
-
-    public void updateCurrentEvent(Integer update) {
-        events.set(eventsIndex, update);
-    }
-
-
-    public Process(String ID) {
-        this.ID = ID;
-        this.events = new ArrayList<>();
-        this.eventsIndex = 0;
-        this.waitTime = 0;
-        this.turnAroundTime = 0;
-        this.responseTime = 0;
-        this.QAddTime = 0;
-        this.priority = 0;
+    public String reportString() {
+        return String.format("Process: %s , Response Time: %d , Wait Time: %d , Turnaround Time: %d", ID, responseTime, waitTime, turnAroundTime);
     }
 }
-
