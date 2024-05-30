@@ -1,14 +1,9 @@
 package src;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-/**
- * Scheduler class to emulate the multi level feedback queue scheduling algorithm.
- * @author Jordan Fleming
- * @version 1.0
- * @since 5/22/2024
- */
 public class MLFQScheduler {
     Process[] processList;
     ArrayList<Process> IOList;
@@ -28,25 +23,25 @@ public class MLFQScheduler {
 
     MLFQScheduler(Process[] processes) {
         processList = processes;
-        IOList = new ArrayList<Process>();
+        IOList = new ArrayList<>();
         runningProcess = null;
-        queueOne = new LinkedList<Process>();
-        queueTwo = new LinkedList<Process>();
-        queueThree = new LinkedList<Process>();
-        for (int i = 0; i < processes.length; i++) {
-            queueOne.add(processes[i]);
+        queueOne = new LinkedList<>();
+        queueTwo = new LinkedList<>();
+        queueThree = new LinkedList<>();
+        for (Process process : processes) {
+            queueOne.add(process);
         }
         timeQuantum = 0;
         quantumCounter = 0;
         avgRT = avgTRT = avgWT = CPUUtilization = totalTimeActive = 0.0;
     }
 
-    public double[] scheduleCPU() {
+    public double[] scheduleCPU() throws IOException {
         while (!queueOne.isEmpty() || !queueTwo.isEmpty() || !queueThree.isEmpty() || !IOList.isEmpty() || runningProcess != null) {
             if (runningProcess == null && (!queueOne.isEmpty() || !queueTwo.isEmpty() || !queueThree.isEmpty())) {
                 moveProcessOntoCPU();
             }
-            if (runningProcess != null && runningProcess.getCurrentEvent() == 0) {
+            if (runningProcess != null && runningProcess.getCurrentEvent() <= 0) {
                 if (runningProcess.eventAtEnd()) {
                     runningProcess.updateProcessStats(timeQuantum);
                     runningProcess = null;
@@ -56,39 +51,39 @@ public class MLFQScheduler {
                     moveProcessOntoCPU();
                 }
             }
-            if (CPUQuantum == 0) {
+            if (CPUQuantum <= 0 && runningProcess != null) {
                 preempt();
             }
             decrementIO();
             if (runningProcess != null) {
                 runningProcess.updateCurrentEvent(-1);
                 totalTimeActive++;
+                CPUQuantum--;
             }
             timeQuantum++;
-            CPUQuantum--;
-             printCPUStatus();
+            printCPUStatus();
         }
         computeAvgs();
-        // TODO: Report averages
-        System.out.printf("Average Response Time: %d%n", avgRT);
-        System.out.printf("Average Waiting Time: %d%n", avgWT);
-        System.out.printf("Average Turnaround Time: %d%n", avgTRT);
-        System.out.printf("CPU Percent Utilization: %d%%%n", avgRT);
+        System.out.printf("Average Response Time: %f%n", avgRT);
+        System.out.printf("Average Waiting Time: %f%n", avgWT);
+        System.out.printf("Average Turnaround Time: %f%n", avgTRT);
+        System.out.printf("CPU Percent Utilization: %f%%%n", CPUUtilization);
+        writeDataToFile(createFileIfNotExists("MLFQ_data.txt"));
         return new double[]{avgRT, avgWT, avgTRT, CPUUtilization};
     }
 
-    public void moveProcessOntoCPU () {
+    public void moveProcessOntoCPU() {
         if (!queueOne.isEmpty()) {
-            runningProcess = queueOne.getFirst();
+            runningProcess = queueOne.poll();
             CPUQuantum = 5;
-            checkFirstLoad(runningProcess);
         } else if (!queueTwo.isEmpty()) {
-            runningProcess = queueTwo.getFirst();
+            runningProcess = queueTwo.poll();
             CPUQuantum = 10;
-            checkFirstLoad(runningProcess);
         } else if (!queueThree.isEmpty()) {
-            runningProcess = queueThree.getFirst();
-            CPUQuantum = 10000000;
+            runningProcess = queueThree.poll();
+            CPUQuantum = 20;
+        }
+        if (runningProcess != null) {
             checkFirstLoad(runningProcess);
         }
     }
@@ -102,43 +97,40 @@ public class MLFQScheduler {
     }
 
     public void IO_to_Queue(int index) {
-        Process processToMove = IOList.get(index);
-        processToMove.setEventsIndex(processToMove.getEventsIndex() + 1);
+        Process processToMove = IOList.remove(index);
         if (processToMove.getPriority() == 1) {
-            queueOne.add(IOList.remove(index));
+            queueOne.add(processToMove);
         } else if (processToMove.getPriority() == 2) {
-            queueTwo.add(IOList.remove(index));
+            queueTwo.add(processToMove);
         } else {
-            queueThree.add(IOList.remove(index));
+            queueThree.add(processToMove);
         }
     }
 
     public void decrementIO() {
-        for (int i = 0; i < IOList.size(); i++) {
+        for (int i = 0; i < IOList.size(); ) {
             Process currProcess = IOList.get(i);
             currProcess.updateCurrentEvent(currProcess.getCurrentEvent() - 1);
             if (checkZeroTime(currProcess)) {
                 IO_to_Queue(i);
+            } else {
+                i++;
             }
         }
     }
 
     public boolean checkZeroTime(Process currProcess) {
-        if (currProcess.getCurrentEvent() == 0) {
-            return true;
-        }
-        return false;
+        return currProcess.getCurrentEvent() <= 0;
     }
 
     public void preempt() {
         runningProcess.setPriority(runningProcess.getPriority() + 1);
         if (runningProcess.getPriority() == 2) {
             queueTwo.add(runningProcess);
-            runningProcess = null;
         } else if (runningProcess.getPriority() >= 3) {
             queueThree.add(runningProcess);
-            runningProcess = null;
         }
+        runningProcess = null;
         moveProcessOntoCPU();
     }
 
@@ -152,10 +144,10 @@ public class MLFQScheduler {
         double sumRT = 0.0;
         double sumTRT = 0.0;
         double sumWT = 0.0;
-        for (int i = 0; i < processList.length; i++) {
-            sumTRT += processList[i].getTurnAroundTime();
-            sumRT += processList[i].getResponseTime();
-            sumWT += processList[i].getWaitTime();
+        for (Process process : processList) {
+            sumTRT += process.getTurnAroundTime();
+            sumRT += process.getResponseTime();
+            sumWT += process.getWaitTime();
         }
         avgRT = sumRT / processList.length;
         avgTRT = sumTRT / processList.length;
@@ -167,7 +159,7 @@ public class MLFQScheduler {
         if (printOutput) {
             System.out.printf("Current Time: %d%n", timeQuantum);
             if (runningProcess != null) {
-                System.out.printf("Next process on the CPU: %s%n", runningProcess.getID());
+                System.out.printf("Running Process: %s, Current Event: %d%n", runningProcess.getID(), runningProcess.getCurrentEvent());
             } else {
                 System.out.println("CPU currently awaiting process");
             }
@@ -176,7 +168,7 @@ public class MLFQScheduler {
             if (queueOne.isEmpty()) {
                 System.out.println("[ EMPTY ]");
             } else {
-                LinkedList<Process> printQueue = (LinkedList<Process>)queueOne.clone();
+                LinkedList<Process> printQueue = new LinkedList<>(queueOne);
                 System.out.println("    Process    Burst");
                 while (!printQueue.isEmpty()) {
                     Process currProcess = printQueue.poll();
@@ -188,7 +180,7 @@ public class MLFQScheduler {
             if (queueTwo.isEmpty()) {
                 System.out.println("[ EMPTY ]");
             } else {
-                LinkedList<Process> printQueue = (LinkedList<Process>)queueTwo.clone();
+                LinkedList<Process> printQueue = new LinkedList<>(queueTwo);
                 System.out.println("    Process    Burst");
                 while (!printQueue.isEmpty()) {
                     Process currProcess = printQueue.poll();
@@ -200,7 +192,7 @@ public class MLFQScheduler {
             if (queueThree.isEmpty()) {
                 System.out.println("[ EMPTY ]");
             } else {
-                LinkedList<Process> printQueue = (LinkedList<Process>)queueThree.clone();
+                LinkedList<Process> printQueue = new LinkedList<>(queueThree);
                 System.out.println("    Process    Burst");
                 while (!printQueue.isEmpty()) {
                     Process currProcess = printQueue.poll();
@@ -212,8 +204,7 @@ public class MLFQScheduler {
             if (IOList.isEmpty()) {
                 System.out.println("[ EMPTY ]");
             } else {
-                for (int i = 0; i < IOList.size(); i++) {
-                    Process currProcess = IOList.get(i);
+                for (Process currProcess : IOList) {
                     System.out.printf("     %s      %d%n", currProcess.getID(), currProcess.getCurrentEvent());
                 }
             }
@@ -222,4 +213,31 @@ public class MLFQScheduler {
         }
     }
 
+    public void writeDataToFile(File file) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
+            bw.write("MLFQ ALGORITHM STATS\n");
+            for (Process process : processList) {
+                bw.write(process.reportString());
+                bw.newLine();
+            }
+            bw.write("Average Response Time: " + avgRT + "\n");
+            bw.write("Average Wait Time: " + avgWT + "\n");
+            bw.write("Average Turnaround Time: " + avgTRT + "\n");
+            bw.write("CPU Utilization: " + CPUUtilization + "%\n");
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static File createFileIfNotExists(String filePath) throws IOException {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            if (!file.createNewFile()) {
+                throw new IOException("Failed to create file: " + filePath);
+            }
+        }
+        return file;
+    }
 }

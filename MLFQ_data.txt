@@ -1,0 +1,13 @@
+MLFQ ALGORITHM STATS
+Process: P1 , Response Time: 0 , Wait Time: 183 , Turnaround Time: 408
+Process: P2 , Response Time: 5 , Wait Time: 31 , Turnaround Time: 458
+Process: P3 , Response Time: 9 , Wait Time: 99 , Turnaround Time: 491
+Process: P4 , Response Time: 14 , Wait Time: 0 , Turnaround Time: 468
+Process: P5 , Response Time: 17 , Wait Time: 272 , Turnaround Time: 581
+Process: P6 , Response Time: 22 , Wait Time: 294 , Turnaround Time: 509
+Process: P7 , Response Time: 27 , Wait Time: 123 , Turnaround Time: 451
+Process: P8 , Response Time: 32 , Wait Time: 5 , Turnaround Time: 314
+Average Response Time: 15.75
+Average Wait Time: 125.875
+Average Turnaround Time: 460.0
+CPU Utilization: 15.63573883161512%

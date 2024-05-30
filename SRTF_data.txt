@@ -1,0 +1,12 @@
+Process: P1 , Response Time: 11 , Wait Time: 16 , Turnaround Time: 241
+Process: P2 , Response Time: 3 , Wait Time: 0 , Turnaround Time: 312
+Process: P3 , Response Time: 16 , Wait Time: 204 , Turnaround Time: 596
+Process: P4 , Response Time: 0 , Wait Time: 0 , Turnaround Time: 259
+Process: P5 , Response Time: 177 , Wait Time: 300 , Turnaround Time: 609
+Process: P6 , Response Time: 24 , Wait Time: 144 , Turnaround Time: 359
+Process: P7 , Response Time: 52 , Wait Time: 261 , Turnaround Time: 589
+Process: P8 , Response Time: 7 , Wait Time: 0 , Turnaround Time: 287
+Average Response Time: 36.250000
+Average Waiting Time: 115.625000
+Average Turnaround Time: 406.500000
+CPU Percent Utilization: 90.655738%
