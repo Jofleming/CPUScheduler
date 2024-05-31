@@ -1,0 +1,13 @@
+***Round Robin Scheduler***
+Process ID: P1, Wait time: 111, Response time: 0, Turnaround time: 336, 
+Process ID: P2, Wait time: 135, Response time: 5, Turnaround time: 562, 
+Process ID: P3, Wait time: 189, Response time: 9, Turnaround time: 581, 
+Process ID: P4, Wait time: 86, Response time: 14, Turnaround time: 570, 
+Process ID: P5, Wait time: 250, Response time: 17, Turnaround time: 559, 
+Process ID: P6, Wait time: 210, Response time: 22, Turnaround time: 425, 
+Process ID: P7, Wait time: 247, Response time: 27, Turnaround time: 575, 
+Process ID: P8, Wait time: 177, Response time: 32, Turnaround time: 486, 
+Total CPU Usage: 95.18% 
+Average Wait Time: 175.63
+Average Response Time: 15.75
+Average Turnaround Time: 511.75
